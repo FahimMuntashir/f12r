@@ -1,6 +1,6 @@
 {
   "name": "@f12r/f12r",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A macOS developer environment setup and management CLI.",
   "main": "index.js",
   "bin": {
