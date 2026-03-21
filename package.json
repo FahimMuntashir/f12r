@@ -1,10 +1,10 @@
 {
-  "name": "f12r",
+  "name": "@f12r/f12r",
   "version": "1.0.0",
   "description": "A macOS developer environment setup and management CLI.",
   "main": "index.js",
   "bin": {
-    "f12r": "./index.js"
+    "f12r": "index.js"
   },
   "scripts": {
     "doctor": "node index.js doctor",
