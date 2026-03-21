@@ -2,96 +2,23 @@
 
 `f12r` is a macOS CLI for checking, installing, and uninstalling common developer tools.
 
-It supports:
+It helps developers:
 
-- `f12r doctor`
-- `f12r setup`
-- `f12r setup --all`
-- `f12r uninstall`
+- inspect their machine with `f12r doctor`
+- install missing tools with `f12r setup`
+- install everything non-interactively with `f12r setup --all`
+- remove supported tools with `f12r uninstall`
 
-The project is built with Node.js and uses:
+## Features
 
-- `commander`
-- `inquirer`
-- `chalk`
-- `ora`
-- `execa`
+- checks for Homebrew, Git, Node.js, npm, Docker, and VS Code
+- shows friendly colored output
+- installs missing tools with Homebrew
+- installs selected VS Code extensions
+- supports interactive and `--all` setup flows
+- works as a global CLI command: `f12r`
 
-## What This Project Does
-
-`f12r doctor`
-
-- checks whether these tools are installed:
-- Homebrew
-- Git
-- Node.js
-- npm
-- Docker
-- VS Code
-
-`f12r setup`
-
-- checks what is missing
-- installs Homebrew automatically if needed
-- asks before installing tools
-- can install common VS Code extensions
-
-`f12r uninstall`
-
-- lets the user choose a supported tool to remove with Homebrew
-
-## Project Structure
-
-```text
-f12r/
-├── index.js
-├── package.json
-├── package-lock.json
-├── README.md
-├── RELEASE_GUIDE.md
-├── AI_CONTEXT.md
-├── commands/
-│   ├── doctor.js
-│   ├── setup.js
-│   └── uninstall.js
-└── utils/
-    ├── checker.js
-    ├── installer.js
-    ├── logger.js
-    └── prompts.js
-```
-
-## Local Development
-
-### 1. Install dependencies
-
-```bash
-npm install
-```
-
-### 2. Run locally
-
-```bash
-node index.js --help
-node index.js doctor
-node index.js setup
-node index.js uninstall
-```
-
-### 3. Link globally on your own machine
-
-```bash
-npm link
-```
-
-Then test:
-
-```bash
-f12r --help
-f12r doctor
-```
-
-## Public Install
+## Install
 
 ### Homebrew
 
@@ -105,28 +32,82 @@ brew install FahimMuntashir/f12r/f12r
 npm install -g @f12r/f12r
 ```
 
-### Verify installation
+## Quick Start
 
 ```bash
-f12r --version
 f12r --help
 f12r doctor
+f12r setup
 ```
 
-## Beginner Publishing Flow
+## Commands
 
-There are 3 parts:
+### `f12r doctor`
 
-1. GitHub source repository
-2. npm package
-3. Homebrew tap
+Checks whether these tools are installed:
 
-Current project locations:
+- Homebrew
+- Git
+- Node.js
+- npm
+- Docker
+- VS Code
 
-- Source repo: `https://github.com/FahimMuntashir/f12r`
-- Homebrew tap repo: `https://github.com/FahimMuntashir/homebrew-f12r`
+It also shows version info when available.
+
+### `f12r setup`
+
+- detects missing tools
+- installs Homebrew automatically if needed
+- asks before installing each missing tool
+- can install these VS Code extensions:
+- `esbenp.prettier-vscode`
+- `dbaeumer.vscode-eslint`
+- `GitHub.copilot`
+
+### `f12r setup --all`
+
+Installs all missing supported tools without per-tool prompts.
+
+### `f12r uninstall`
+
+Lets the user choose a supported tool to remove with Homebrew.
+
+## Local Development
+
+```bash
+npm install
+node index.js --help
+node index.js doctor
+node index.js setup
+node index.js uninstall
+```
+
+To link it globally on your machine:
+
+```bash
+npm link
+```
+
+## Tech Stack
+
+- Node.js
+- CommonJS
+- commander
+- inquirer
+- chalk
+- ora
+- execa
+
+## Project Links
+
+- GitHub source: `https://github.com/FahimMuntashir/f12r`
+- Homebrew tap: `https://github.com/FahimMuntashir/homebrew-f12r`
 - npm package: `@f12r/f12r`
 
-If you are changing the app later, use [RELEASE_GUIDE.md](/Users/innospace/Desktop/f12r/RELEASE_GUIDE.md).
+## Maintainer Notes
 
-If another AI agent needs full context, give it [AI_CONTEXT.md](/Users/innospace/Desktop/f12r/AI_CONTEXT.md).
+If you are updating or republishing this project later, use:
+
+- `RELEASE_GUIDE.md` for the full release workflow
+- `AI_CONTEXT.md` for future AI-agent handoff context
