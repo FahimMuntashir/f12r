@@ -1,0 +1,30 @@
+{
+  "name": "f12r",
+  "version": "1.0.0",
+  "description": "A macOS developer environment setup and management CLI.",
+  "main": "index.js",
+  "bin": {
+    "f12r": "./index.js"
+  },
+  "scripts": {
+    "doctor": "node index.js doctor",
+    "setup": "node index.js setup",
+    "uninstall": "node index.js uninstall"
+  },
+  "keywords": [
+    "cli",
+    "macos",
+    "developer-tools",
+    "homebrew",
+    "setup"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "execa": "^5.1.1",
+    "inquirer": "^8.2.6",
+    "ora": "^5.4.1"
+  }
+}
