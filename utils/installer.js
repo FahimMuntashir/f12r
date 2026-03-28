@@ -66,16 +66,6 @@ async function ensurePackageManagerReady() {
     if (!aptStatus.installed) {
       throw new Error('APT is not available on this Linux system.');
     }
-
-    const spinner = ora('🔍 Refreshing APT package index...').start();
-
-    try {
-      await runApt(['update']);
-      spinner.succeed('✅ APT package index updated');
-    } catch (err) {
-      spinner.fail('❌ Failed to refresh APT package index');
-      throw new Error(formatCommandError(err));
-    }
   }
 }
 
