@@ -1,7 +1,8 @@
 const execa = require('execa');
 const ora = require('ora');
-const { TOOLS } = require('./checker');
+const { TOOLS, commandExists } = require('./checker');
 const { warning, info } = require('./logger');
+const { getPlatform, isLinux, isMacOS } = require('./platform');
 
 const VS_CODE_EXTENSIONS = [
   'esbenp.prettier-vscode',
@@ -13,7 +14,15 @@ async function runBrew(args) {
   return execa('brew', args, { stdio: 'pipe' });
 }
 
+async function runApt(args) {
+  return execa('sudo', ['apt-get', ...args], { stdio: 'pipe' });
+}
+
 async function ensureHomebrewInstalled() {
+  if (!isMacOS()) {
+    return;
+  }
+
   const brewStatus = await TOOLS.brew.check();
 
   if (brewStatus.installed) {
@@ -45,48 +54,108 @@ async function ensureHomebrewInstalled() {
   }
 }
 
+async function ensurePackageManagerReady() {
+  if (isMacOS()) {
+    await ensureHomebrewInstalled();
+    return;
+  }
+
+  if (isLinux()) {
+    const aptStatus = await TOOLS.apt.check();
+
+    if (!aptStatus.installed) {
+      throw new Error('APT is not available on this Linux system.');
+    }
+
+    const spinner = ora('🔍 Refreshing APT package index...').start();
+
+    try {
+      await runApt(['update']);
+      spinner.succeed('✅ APT package index updated');
+    } catch (err) {
+      spinner.fail('❌ Failed to refresh APT package index');
+      throw new Error(formatCommandError(err));
+    }
+  }
+}
+
 async function installTool(toolKey) {
   const tool = TOOLS[toolKey];
+  const platform = getPlatform();
 
-  if (!tool || !tool.brewName) {
+  if (!tool) {
     throw new Error(`Unsupported tool: ${toolKey}`);
   }
 
-  const spinner = ora(`🚀 Installing ${toolKey === 'code' ? 'VS Code' : capitalize(toolKey)}...`).start();
+  const label = tool.label;
+  const spinner = ora(`🚀 Installing ${label}...`).start();
 
   try {
-    if (tool.installType === 'cask') {
-      await runBrew(['install', '--cask', tool.brewName]);
+    if (platform === 'macos') {
+      if (!tool.brewName) {
+        throw new Error(`Unsupported tool on macOS: ${toolKey}`);
+      }
+
+      if (tool.installType === 'cask') {
+        await runBrew(['install', '--cask', tool.brewName]);
+      } else {
+        await runBrew(['install', tool.brewName]);
+      }
+    } else if (platform === 'linux') {
+      if (tool.key === 'code') {
+        await installVSCodeOnLinux();
+      } else if (tool.aptName) {
+        await runApt(['install', '-y', tool.aptName]);
+      } else {
+        throw new Error(`Unsupported tool on Linux: ${toolKey}`);
+      }
     } else {
-      await runBrew(['install', tool.brewName]);
+      throw new Error(`Unsupported platform: ${platform}`);
     }
 
-    spinner.succeed(`✅ ${toolKey === 'code' ? 'VS Code' : capitalize(toolKey)} installed successfully`);
+    spinner.succeed(`✅ ${label} installed successfully`);
   } catch (err) {
-    spinner.fail(`❌ Failed to install ${toolKey === 'code' ? 'VS Code' : capitalize(toolKey)}`);
+    spinner.fail(`❌ Failed to install ${label}`);
     throw new Error(formatCommandError(err));
   }
 }
 
 async function uninstallTool(toolKey) {
   const tool = TOOLS[toolKey];
+  const platform = getPlatform();
 
-  if (!tool || !tool.brewName) {
+  if (!tool) {
     throw new Error(`Unsupported tool: ${toolKey}`);
   }
 
-  const spinner = ora(`🧹 Uninstalling ${toolKey === 'code' ? 'VS Code' : capitalize(toolKey)}...`).start();
+  const spinner = ora(`🧹 Uninstalling ${tool.label}...`).start();
 
   try {
-    if (tool.installType === 'cask') {
-      await runBrew(['uninstall', '--cask', tool.brewName]);
+    if (platform === 'macos') {
+      if (!tool.brewName) {
+        throw new Error(`Unsupported tool on macOS: ${toolKey}`);
+      }
+
+      if (tool.installType === 'cask') {
+        await runBrew(['uninstall', '--cask', tool.brewName]);
+      } else {
+        await runBrew(['uninstall', tool.brewName]);
+      }
+    } else if (platform === 'linux') {
+      if (tool.key === 'code') {
+        await uninstallVSCodeOnLinux();
+      } else if (tool.aptName) {
+        await runApt(['remove', '-y', tool.aptName]);
+      } else {
+        throw new Error(`Unsupported tool on Linux: ${toolKey}`);
+      }
     } else {
-      await runBrew(['uninstall', tool.brewName]);
+      throw new Error(`Unsupported platform: ${platform}`);
     }
 
-    spinner.succeed(`✅ ${toolKey === 'code' ? 'VS Code' : capitalize(toolKey)} removed successfully`);
+    spinner.succeed(`✅ ${tool.label} removed successfully`);
   } catch (err) {
-    spinner.fail(`❌ Failed to uninstall ${toolKey === 'code' ? 'VS Code' : capitalize(toolKey)}`);
+    spinner.fail(`❌ Failed to uninstall ${tool.label}`);
     throw new Error(formatCommandError(err));
   }
 }
@@ -107,17 +176,34 @@ async function installVSCodeExtensions() {
   }
 }
 
+async function installVSCodeOnLinux() {
+  const hasSnap = await commandExists('snap');
+
+  if (!hasSnap) {
+    throw new Error('VS Code install on Linux requires `snap`. Install snapd first or install VS Code manually.');
+  }
+
+  await execa('sudo', ['snap', 'install', 'code', '--classic'], { stdio: 'pipe' });
+}
+
+async function uninstallVSCodeOnLinux() {
+  const hasSnap = await commandExists('snap');
+
+  if (!hasSnap) {
+    throw new Error('VS Code uninstall on Linux requires `snap`.');
+  }
+
+  await execa('sudo', ['snap', 'remove', 'code'], { stdio: 'pipe' });
+}
+
 function formatCommandError(err) {
   const output = err.stderr || err.stdout || err.shortMessage || err.message;
   return output.trim();
 }
 
-function capitalize(value) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
 module.exports = {
   VS_CODE_EXTENSIONS,
+  ensurePackageManagerReady,
   ensureHomebrewInstalled,
   installTool,
   uninstallTool,

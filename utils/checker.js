@@ -1,4 +1,5 @@
 const execa = require('execa');
+const { isLinux, isMacOS, getPlatform } = require('./platform');
 
 async function commandExists(command) {
   try {
@@ -32,92 +33,121 @@ async function checkToolWithVersion({ key, label, command, versionArgs, optional
   };
 }
 
-const TOOL_DEFINITIONS = [
-  {
+const TOOLS = {
+  brew: {
     key: 'brew',
     label: 'Homebrew',
     command: 'brew',
-    versionArgs: ['--version']
+    brewName: 'brew',
+    installType: 'formula',
+    supportedPlatforms: ['macos'],
+    check() {
+      return checkToolWithVersion(this);
+    }
   },
-  {
+  apt: {
+    key: 'apt',
+    label: 'APT',
+    command: 'apt',
+    versionArgs: ['--version'],
+    supportedPlatforms: ['linux'],
+    check() {
+      return checkToolWithVersion(this);
+    }
+  },
+  git: {
     key: 'git',
     label: 'Git',
     command: 'git',
-    versionArgs: ['--version']
+    versionArgs: ['--version'],
+    brewName: 'git',
+    aptName: 'git',
+    installType: 'formula',
+    supportedPlatforms: ['macos', 'linux'],
+    check() {
+      return checkToolWithVersion(this);
+    }
   },
-  {
+  node: {
     key: 'node',
     label: 'Node.js',
     command: 'node',
-    versionArgs: ['--version']
+    versionArgs: ['--version'],
+    brewName: 'node',
+    aptName: 'nodejs',
+    installType: 'formula',
+    supportedPlatforms: ['macos', 'linux'],
+    check() {
+      return checkToolWithVersion(this);
+    }
   },
-  {
+  npm: {
     key: 'npm',
     label: 'npm',
     command: 'npm',
-    versionArgs: ['--version']
+    versionArgs: ['--version'],
+    brewName: null,
+    aptName: 'npm',
+    installType: null,
+    supportedPlatforms: ['macos', 'linux'],
+    check() {
+      return checkToolWithVersion(this);
+    }
   },
-  {
+  docker: {
     key: 'docker',
     label: 'Docker',
     command: 'docker',
     versionArgs: ['--version'],
-    optional: true
+    brewName: 'docker',
+    aptName: 'docker.io',
+    installType: 'cask',
+    optional: true,
+    supportedPlatforms: ['macos', 'linux'],
+    check() {
+      return checkToolWithVersion(this);
+    }
   },
-  {
+  code: {
     key: 'code',
     label: 'VS Code',
     command: 'code',
-    versionArgs: ['--version']
-  }
-];
-
-const TOOLS = {
-  brew: {
-    brewName: 'brew',
-    installType: 'formula',
-    check: () => checkToolWithVersion(TOOL_DEFINITIONS[0])
-  },
-  git: {
-    brewName: 'git',
-    installType: 'formula',
-    check: () => checkToolWithVersion(TOOL_DEFINITIONS[1])
-  },
-  node: {
-    brewName: 'node',
-    installType: 'formula',
-    check: () => checkToolWithVersion(TOOL_DEFINITIONS[2])
-  },
-  npm: {
-    brewName: null,
-    installType: null,
-    check: () => checkToolWithVersion(TOOL_DEFINITIONS[3])
-  },
-  docker: {
-    brewName: 'docker',
-    installType: 'cask',
-    check: () => checkToolWithVersion(TOOL_DEFINITIONS[4])
-  },
-  code: {
+    versionArgs: ['--version'],
     brewName: 'visual-studio-code',
+    aptName: null,
+    snapName: 'code',
     installType: 'cask',
-    check: () => checkToolWithVersion(TOOL_DEFINITIONS[5])
+    supportedPlatforms: ['macos', 'linux'],
+    check() {
+      return checkToolWithVersion(this);
+    }
   }
 };
 
+function getSupportedToolDefinitions() {
+  const platform = getPlatform();
+
+  return Object.values(TOOLS).filter((tool) => tool.supportedPlatforms.includes(platform));
+}
+
 async function getSystemStatus() {
-  return Promise.all(TOOL_DEFINITIONS.map((tool) => checkToolWithVersion(tool)));
+  const tools = getSupportedToolDefinitions();
+  return Promise.all(tools.map((tool) => checkToolWithVersion(tool)));
 }
 
 async function getManagedTools() {
   const keys = ['git', 'node', 'docker', 'code'];
   const tools = await Promise.all(keys.map((key) => TOOLS[key].check()));
-  return tools;
+  const platform = getPlatform();
+  return tools.filter((tool) => TOOLS[tool.key].supportedPlatforms.includes(platform));
 }
 
 module.exports = {
   TOOLS,
   commandExists,
   getSystemStatus,
-  getManagedTools
+  getManagedTools,
+  getSupportedToolDefinitions,
+  isLinux,
+  isMacOS
 };

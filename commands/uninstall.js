@@ -2,10 +2,16 @@ const { getManagedTools } = require('../utils/checker');
 const { uninstallTool } = require('../utils/installer');
 const { chooseToolToUninstall, confirmUninstallTool } = require('../utils/prompts');
 const { heading, info, warning, success } = require('../utils/logger');
+const { isMacOS, isLinux } = require('../utils/platform');
 
 async function runUninstall() {
   heading('f12r uninstall');
   info('🔍 Checking installed removable tools...');
+
+  if (!isMacOS() && !isLinux()) {
+    warning('Automatic uninstall is only supported on macOS and Linux.');
+    return;
+  }
 
   const removableTools = await getManagedTools();
   const installedTools = removableTools.filter((tool) => tool.installed);
